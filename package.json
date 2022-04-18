@@ -1,0 +1,27 @@
+{
+  "name": "logseq-cuvee",
+  "version": "0.1.0",
+  "description": "Logseq CSV exporter",
+  "main": "dist/index.html",
+  "targets": {
+    "main": false
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "parcel build --no-source-maps index.html --public-url ./"
+  },
+  "keywords": [],
+  "author": "Alex Qwxlea",
+  "license": "MIT",
+  "dependencies": {
+    "@logseq/libs": "0.0.1-alpha.35"
+  },
+  "logseq": {
+    "id": "logseq-cuvee",
+    "title": "logseq-cuvee",
+    "icon": "./images/icon.png"
+  },
+  "devDependencies": {
+    "parcel": "^2.0.0"
+  }
+}
