@@ -6,14 +6,14 @@ import { onTemplate } from "./qwutils";
 const pluginName = ["logseq-cuvee", "Logseq Cuvée",":cuvee"]
 const reProperty:RegExp = /\(property (.*?)\)/gm
 
-let settingsTemplate: SettingSchemaDesc[] = [  
-  {
-    key: "emoji",
-    type: 'string',
-    default: "⏱",
-    title: "Note taking Emoji",
-    description: "Emoji printed when transcribing video",
-  }]
+// let settingsTemplate: SettingSchemaDesc[] = [  
+//   {
+//     key: "emoji",
+//     type: 'string',
+//     default: "⏱",
+//     title: "Note taking Emoji",
+//     description: "Emoji printed when transcribing video",
+//   }]
 
 function downloadBlob(content, filename, contentType) {
   // Create a blob
@@ -84,9 +84,9 @@ function getProplist(regex:RegExp, query:string) {
   return proplist
 }
 
-async function csvQuery(block:BlockEntity, query:string, includePage:boolean) {
+async function csvQuery(block:BlockEntity, query:string, includepage:boolean) {
   logseq.App.showMsg(`Exporting CSV`)
-
+  console.log("DB QQQQQQ", query, includepage)
   //parse query
   //(and [[testday]] (property total-hours) (property restful-hours) )
   // const reTag:RegExp      = /\[\[(.*?)\]\]/gm
@@ -100,40 +100,37 @@ async function csvQuery(block:BlockEntity, query:string, includePage:boolean) {
   );
 
   const proplist = getProplist(reProperty, query)
-
-  //FIXME csvData - date is ugly!
   let csvData = []
-  let csvHeader = []
-  csvHeader.push(proplist)
-  if (includePage) csvHeader.unshift("date")
-  csvData.push(csvHeader)
-
   await logseq.DB.q(query).then((result) => {
-    console.log("DB", result)
+    // console.log("DB", result)
     result.map(n => {
       // console.log("DB ", n)
-      let line = (includePage) ? [n.page.name] : []
+      let line = (includepage === "true") ? [n.page.name] : []
       for (const prop of proplist) {
+        // console.log("DB prop", prop)
         line.push(n.properties[snakeToCamel(prop)])
-        }
-        csvData.push(line)
+      }
+      csvData.push(line)
       });
   }); //FIXME error message
+
+  let csvHeader = proplist.slice()
+  if (includepage === "true") csvHeader.unshift("date")
+  csvData.unshift(csvHeader)
   let csvContent = csvData.map(e => e.join(",")).join("\n");
   downloadBlob(csvContent, 'export.csv', 'text/csv;charset=utf-8;')
 }
 
 const main = async () => {
   console.log(`Plugin: ${pluginName[1]} loaded`)
-
-  logseq.useSettingsSchema(settingsTemplate)
+  // logseq.useSettingsSchema(settingsTemplate)
 
   logseq.provideModel({
     async queryCSV (e: any) {
-      const { blockUuid, query, includePage, slotId } = e.dataset
+      const { blockUuid, query, includepage, slotId } = e.dataset
       console.log("DB e.dataset", e.dataset)
       if (slotId == "preview") await previewQuery(blockUuid, query)
-      else await csvQuery(blockUuid, query, includePage)
+      else await csvQuery(blockUuid, query, includepage)
     }})
 
 
@@ -195,9 +192,9 @@ const main = async () => {
     try {
       // console.log("DB payload", payload)
       // console.log("DB payload", payload.arguments.length)
-      let [type, includePage, query ] = payload.arguments
-      includePage = JSON.parse(includePage) //convert too Boolean
-      console.log("DB typeof", typeof includePage )
+      let [type, includepage, query ] = payload.arguments
+      includepage = JSON.parse(includepage) //convert too Boolean
+      // console.log("DB typeof", typeof includepage )
       if (type !== pluginName[2]) return
       const templYN = await onTemplate(payload.uuid)        
       const button = `
@@ -214,19 +211,19 @@ const main = async () => {
       data-slot-id="query" 
       data-block-uuid="${payload.uuid}"
       data-query="${query}"
-      data-includePage="${includePage}"
+      data-includepage="${includepage}"
       data-on-click="queryCSV">
       👩🏽‍💻 Export 
       </button> <span class="cuvee">CSV: ${query}</span>`
       let msg:string
-      if (templYN === false && query != "query" && typeof includePage == "boolean") {
+      if (templYN === false && query != "query" && typeof includepage == "boolean") {
         msg = button
       } else { 
         // payload.arguments.length
-        const dclass = (typeof includePage == "boolean") ? "cuvee-green" : "cuvee-red"
+        const dclass = (typeof includepage == "boolean") ? "cuvee-green" : "cuvee-red"
         const qclass = (query != "query") ? "cuvee-green" : "cuvee-red"
         const errmsg = (templYN === true) ? "This does not work in a template" : "<b>Error:</b> use: 'true/false' then a real query" 
-        msg = `{{renderer ${pluginName[2]}, <span class="${dclass}">${includePage}</span>, <span class="${qclass}">${query}</span>}} ${errmsg}`
+        msg = `{{renderer ${pluginName[2]}, <span class="${dclass}">${includepage}</span>, <span class="${qclass}">${query}</span>}} ${errmsg}`
       }
           await logseq.provideUI({
           key: `${pluginName[0]}_a`,
