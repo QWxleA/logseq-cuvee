@@ -3,7 +3,6 @@ import { SettingSchemaDesc, BlockEntity } from '@logseq/libs/dist/LSPlugin';
 
 import { onTemplate } from "./qwutils";
 
-
 const pluginName = ["logseq-cuvee", "Logseq Cuvée",":cuvee"]
 const reProperty:RegExp = /\(property (.*?)\)/gm
 
@@ -49,7 +48,7 @@ async function exportCSV (e) {
 }
 
 async function previewQuery(blockUuid:BlockEntity, query:string) {
-  logseq.App.showMsg(`Toggled preview`)
+  // logseq.App.showMsg(`Toggled preview`)
 
   // preview property, so we don't insert loads of blocks
   const newContent = `{{query ${query}}}`
@@ -85,8 +84,8 @@ function getProplist(regex:RegExp, query:string) {
   return proplist
 }
 
-async function csvQuery(block:BlockEntity, query:string) {
-  logseq.App.showMsg(`Toggled csv`)
+async function csvQuery(block:BlockEntity, query:string, includePage:boolean) {
+  logseq.App.showMsg(`Exporting CSV`)
 
   //parse query
   //(and [[testday]] (property total-hours) (property restful-hours) )
@@ -106,26 +105,19 @@ async function csvQuery(block:BlockEntity, query:string) {
   let csvData = []
   let csvHeader = []
   csvHeader.push(proplist)
-  csvHeader.unshift("date")
+  if (includePage) csvHeader.unshift("date")
   csvData.push(csvHeader)
 
   await logseq.DB.q(query).then((result) => {
-    const doubled = result.map(n => {
-      // console.log("DB 0.1 n:", n)
-      let line = [n.page.name]
-      // console.log("DB 1. line", line)
-      // console.log("DB 0.3 proplist:", proplist)
+    console.log("DB", result)
+    result.map(n => {
+      // console.log("DB ", n)
+      let line = (includePage) ? [n.page.name] : []
       for (const prop of proplist) {
-        // console.log("DB 1. prop", prop)
         line.push(n.properties[snakeToCamel(prop)])
         }
-        console.log("DB line", line)
         csvData.push(line)
-        // return ret 
       });
-    // csvData.push(doubled)
-    console.log("DB csv", csvData)
-    // console.log("DB 4. 2x", doubled)
   }); //FIXME error message
   let csvContent = csvData.map(e => e.join(",")).join("\n");
   downloadBlob(csvContent, 'export.csv', 'text/csv;charset=utf-8;')
@@ -138,10 +130,10 @@ const main = async () => {
 
   logseq.provideModel({
     async queryCSV (e: any) {
-      const { blockUuid, query, slotId } = e.dataset
+      const { blockUuid, query, includePage, slotId } = e.dataset
       console.log("DB e.dataset", e.dataset)
       if (slotId == "preview") await previewQuery(blockUuid, query)
-      else await csvQuery(blockUuid, query)
+      else await csvQuery(blockUuid, query, includePage)
     }})
 
 
@@ -149,8 +141,9 @@ const main = async () => {
     .csv {
       background-color: pink;
     }
-    .pomodoro-timer-btn {
+    .cuvee-btn {
        border: 1px solid var(--ls-border-color); 
+       background-color: var(--ls-block-bullet-border-color);
        white-space: initial; 
        padding: 3px 4px; 
        border-radius: 4px; 
@@ -161,34 +154,33 @@ const main = async () => {
        margin-right: 1em;
     }
     
-    .pomodoro-timer-btn.is-start:hover {
+    .cuvee-btn:hover {
       opacity: .8;
     }
     
-    .pomodoro-timer-btn.is-start:active {
+    .cuvee-btn:active {
       opacity: .6;
     }
     
-    .pomodoro-timer-btn.is-start {
+    .cuvee-btn.preview {
+      padding: 3px 6px;
+      cursor: zoom-in;
+    }  
+    .cuvee-btn.export {
       padding: 3px 6px;
       cursor: pointer;
+    }  
+    .cuvee {
+      font-weight: bold;
+      padding-top: 5px;
     }
-    
-    .pomodoro-timer-btn.is-pending {
-      padding-left: 6px;
-      width: 84px;
-      background-color: #f6dbdb;
-      border-color: #edbdbd;
-      color: #cd3838;
+    .cuvee-red {
+      color: red;
     }
-    
-    .pomodoro-timer-btn.is-done {
-      width: auto;
-      background-color: #defcf0;
-      border-color: #9ddbc7;
-      color: #0F9960;
+    .cuvee-green {
+      color: green;
     }
-  `)
+    `)
 
   logseq.App.registerPageMenuItem(
     "Export CSV",
@@ -196,47 +188,55 @@ const main = async () => {
   )
 
   logseq.Editor.registerSlashCommand('Cuvee: insert Export CSV button', async () => {
-    await logseq.Editor.insertAtEditingCursor(`{{renderer ${pluginName[2]}, query}} `);
+    await logseq.Editor.insertAtEditingCursor(`{{renderer ${pluginName[2]}, true, query}} `);
   });
 
   logseq.App.onMacroRendererSlotted(async ({ slot, payload }) => {
     try {
-      let [type, query ] = payload.arguments
+      // console.log("DB payload", payload)
+      // console.log("DB payload", payload.arguments.length)
+      let [type, includePage, query ] = payload.arguments
+      includePage = JSON.parse(includePage) //convert too Boolean
+      console.log("DB typeof", typeof includePage )
       if (type !== pluginName[2]) return
       const templYN = await onTemplate(payload.uuid)        
       const button = `
       <button
-      class="pomodoro-timer-btn is-start"
+      class="cuvee-btn preview"
       data-slot-id="preview" 
       data-block-uuid="${payload.uuid}"
       data-query="${query}"
       data-on-click="queryCSV">
-      👩🏽‍💻 Preview 
+      🕵🏽‍♂️ Preview 
       </button>
       <button
-      class="pomodoro-timer-btn is-start"
+      class="cuvee-btn export"
       data-slot-id="query" 
       data-block-uuid="${payload.uuid}"
       data-query="${query}"
+      data-includePage="${includePage}"
       data-on-click="queryCSV">
       👩🏽‍💻 Export 
-      </button> <b>CSV: ${query}</b>`
-      if (templYN === false || ! query == "query") { 
+      </button> <span class="cuvee">CSV: ${query}</span>`
+      let msg:string
+      if (templYN === false && query != "query" && typeof includePage == "boolean") {
+        msg = button
+      } else { 
+        // payload.arguments.length
+        const dclass = (typeof includePage == "boolean") ? "cuvee-green" : "cuvee-red"
+        const qclass = (query != "query") ? "cuvee-green" : "cuvee-red"
+        const errmsg = (templYN === true) ? "This does not work in a template" : "<b>Error:</b> use: 'true/false' then a real query" 
+        msg = `{{renderer ${pluginName[2]}, <span class="${dclass}">${includePage}</span>, <span class="${qclass}">${query}</span>}} ${errmsg}`
+      }
           await logseq.provideUI({
           key: `${pluginName[0]}_a`,
           slot,
-          template: button,
+          template: msg,
           reset: true,
           style: { flex: 1 },
         })
         return 
-      }
-      else { 
-        // const nblock = await logseq.Editor.getBlock(uuid);
-        // if (!nblock.properties?.id) { logseq.Editor.upsertBlockProperty(nblock.uuid, "id", nblock.uuid); }
-        let msg = (query == "query") ? "Replace 'query' with an *actual* query" : "This does not work in a template"
-        await logseq.Editor.updateBlock(payload.uuid, msg) 
-      }  
+  
     } catch (error) { console.log(error) }
   })
   }
