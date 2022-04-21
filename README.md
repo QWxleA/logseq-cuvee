@@ -192,5 +192,5 @@ Project Link: [https://github.com/QwxleaA/logseq-cuvee](https://github.com/Qwxle
 [issues-url]: https://github.com/QWxleA/logseq-cuvee/issues
 [license-shield]: https://img.shields.io/github/license/QWxleA/logseq-cuvee.svg?style=for-the-badge
 [license-url]: https://github.com/QWxleA/logseq-cuvee/blob/master/LICENSE.txt
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: images/screenshot.gif
 [configuration-screenshot]: ./images/configuration.png
