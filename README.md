@@ -86,7 +86,7 @@ This plugin makes it possible to export the result of a query as a [CSV](https:/
 - Restart the application.
 - Click 3 dots and go to Plugins (or `Esc t p`).
 
-### Install plugin from the Marketplace (recommended) 
+### Install plugin from the Marketplace (recommended)
 
 - Click the `Marketplace` button and then click `Plugins`.
 - Find the plugin and click `Install`.
@@ -173,9 +173,9 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Alex Qwxlea - [@QwxleaA](https://twitter.com/QwxleaA) 
+Alex Qwxlea - [@QwxleaA](https://twitter.com/QwxleaA)
 
-Project Link: [https://github.com/QwxleaA/logseq-cuvee](https://github.com/QwxleaA/logseq-cuvee)
+Project Link: [https://github.com/QwxleA/logseq-cuvee](https://github.com/QwxleA/logseq-cuvee)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
